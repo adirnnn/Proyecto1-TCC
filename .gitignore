@@ -1,0 +1,18 @@
+# cachés y temporales de python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# herramientas y editores
+.pytest_cache/
+.vscode/
+.idea/
+*.swp
+
+# sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# imágenes y archivos que genera el programa al ejecutarse
+salida/

@@ -1,0 +1,11 @@
+# una expresión regular por línea.
+# las líneas vacías y las que empiezan con # se ignoran.
+# la cadena w se pasa aparte, con la opción -w o cuando el programa la pide.
+
+a
+a|b
+ab
+a*
+(a|b)*
+(a|b)*abb(a|b)*
+(b|b)*abb(a|b)*
