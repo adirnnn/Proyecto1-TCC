@@ -44,10 +44,15 @@ python main.py expresiones.txt -w babbaaaa
 python main.py expresiones.txt -w abb -w ""        # -w "" es la cadena vacía
 python main.py expresiones.txt --sin-imagenes --detalle
 python main.py expresiones.txt -s imagenes --tabla
+python main.py -r "(a|b)*abb(a|b)*" -w babbaaaa    # sin archivo
 ```
+
+el archivo es opcional si se usa `-r`; se pueden combinar (las expresiones de
+`-r` van primero y las del archivo siguen la numeración).
 
 | opción | qué hace |
 |---|---|
+| `-r`, `--regex` | expresión regular escrita directamente aquí, sin archivo. se puede repetir. el texto se toma **tal cual**: `;` y `#` son símbolos normales. |
 | `-w`, `--cadena` | cadena `w` a evaluar. se puede repetir: `-w abb -w ba`. |
 | `-s`, `--salida` | carpeta donde se guardan los grafos (por defecto `salida`). |
 | `--sin-imagenes` | no genera archivos SVG ni DOT (solo consola). |
@@ -87,6 +92,9 @@ reglas:
 (a|b)*abb(a|b)*;babbaaaa,abb,ba,
 ```
 
+si una expresión necesita usar `;` o empezar con `#` como símbolos del alfabeto,
+se pasa con `-r` en lugar de por archivo: ahí el texto se toma tal cual.
+
 en el repositorio están [`expresiones.txt`](expresiones.txt) y
 [`expresiones_invalidas.txt`](expresiones_invalidas.txt) (para ver el manejo de
 errores).
@@ -98,6 +106,12 @@ AFD por subconjuntos y del AFD minimizado, las rutas de las imágenes y, por cad
 cadena `w`, el veredicto en cada autómata más la línea
 `=> w SÍ/NO pertenece a L(r)`. si los tres autómatas no coinciden, se marca con
 `*** ATENCIÓN ***` (indica un error).
+
+cuando el AFD minimizado necesitó un **estado pozo** para quedar completo, se
+avisa justo debajo de su resumen. eso explica los casos en los que el AFD
+minimizado tiene un estado **más** que el de subconjuntos (ver
+[minimización](#4-minimización-srcminimizacionpy)): el de subconjuntos es
+*parcial* y el mínimo se entrega *completo*.
 
 ---
 
@@ -271,7 +285,15 @@ refinamiento de particiones (moore):
 el AFD minimizado que se devuelve es siempre **completo** (el AFD mínimo
 *completo*). para expresiones envueltas en `(a|b)*` el AFD de subconjuntos ya es
 completo y no aparece ningún pozo; para expresiones como `abb` el mínimo tiene
-un estado más que la versión "de libro" que se dibuja parcial.
+un estado más que la versión "de libro" que se dibuja parcial. cuando eso pasa,
+el programa lo dice en la consola para que no parezca un error:
+
+```
+AFD (minimizado)  : 5 estados | inicial: S0 | aceptación: {S3} | alfabeto: {a, b}
+          nota: el AFD minimizado se entrega completo; se le
+          agregó el estado pozo P para las transiciones que
+          faltaban, así δ queda definida en todos los pares.
+```
 
 ### 5. simulación (`src/simulador.py`)
 
@@ -291,7 +313,9 @@ de ahí a **texto SVG** (imagen) y a **texto DOT** (por si se quiere renderizar
 con graphviz; no se ejecuta). el acomodo es por niveles BFS desde el inicial. el
 estado inicial lleva una flecha que viene de la nada; los de aceptación se
 dibujan con doble círculo; cada arista lleva su símbolo (ε incluido) y las
-aristas paralelas se juntan con las etiquetas separadas por coma.
+aristas paralelas se juntan con las etiquetas separadas por coma. los auto-lazos
+suben por encima de su estado, así que el dibujo se baja lo necesario para que
+ese arco no se recorte ni se cruce con el título.
 
 ---
 
@@ -317,7 +341,8 @@ cobertura:
 - **simulación**: casos del enunciado, cadena vacía, expresiones anulables,
   rechazo tras coincidencia parcial, símbolo fuera del alfabeto, `\0`, espacio.
 - **integración**: leer el archivo (`\r\n`, sin salto final, duplicados,
-  comentarios), una línea con error no detiene el archivo, códigos de salida.
+  comentarios), una línea con error no detiene el archivo, códigos de salida,
+  `-r` sin archivo y combinado con archivo, aviso del estado pozo.
 - **equivalencia**: para un banco de ~20 expresiones y **todas** las cadenas
   cortas, el AFN, el AFD y el AFD minimizado dan el mismo veredicto; y para las
   que se traducen limpio, se compara además contra `re.fullmatch` de python.
@@ -381,12 +406,16 @@ como evidencia (se regeneran con `python main.py expresiones.txt`):
 
 - **sin clases de caracteres `[abc]`, comodín `.` ni anclas.** solo unión,
   concatenación, cerradura, `+`, `?`, agrupación, ε y escapes.
-- `;` en el archivo de entrada separa la expresión de las cadenas de prueba, así
-  que **`;` no puede usarse como símbolo del alfabeto dentro del archivo** (sí
-  con `-w`).
+- `;` en el archivo de entrada separa la expresión de las cadenas de prueba, y
+  un `#` al inicio de línea es un comentario, así que **ninguno de los dos puede
+  usarse ahí como símbolo del alfabeto**; con `-r` sí, porque ese texto se toma
+  tal cual.
 - el **acomodo del SVG** es sencillo (columnas por nivel BFS): para el AFN de
   ~22 estados queda apretado y algunas aristas se cruzan. el AFD y el AFD mínimo
   se leen bien.
+- las imágenes se generan en **SVG** (vectorial, abre en cualquier navegador).
+  si hace falta un PNG, cada grafo trae su `.dot` al lado:
+  `dot -Tpng afn.dot -o afn.png` con graphviz instalado.
 - el AFD minimizado se entrega **completo**; para lenguajes como `abb` eso da un
   estado (el pozo) más que la versión parcial de algunos libros.
 - minimización por moore "ingenuo" `O(n²·|Σ|)` por iteración; suficiente para el
