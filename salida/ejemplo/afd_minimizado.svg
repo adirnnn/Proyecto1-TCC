@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 610 188" font-family="Helvetica, Arial, sans-serif" font-size="13">
+<defs><marker id="punta" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#333"/></marker></defs>
+<rect width="610" height="188" fill="white"/>
+<text x="305" y="16" text-anchor="middle" font-weight="bold">AFD minimizado - (a|b)*abb(a|b)*</text>
+<g transform="translate(0,24)">
+<path d="M 132.2 70.7 Q 172.0 88.0 211.8 70.7" fill="none" stroke="#333" marker-end="url(#punta)"/>
+<rect x="166.0" y="72.0" width="12" height="15" fill="white" opacity="0.85"/>
+<text x="172.0" y="84.0" text-anchor="middle">a</text>
+<path d="M 104.0 40.0 C 66.0 -6.0 158.0 -6.0 120.0 40.0" fill="none" stroke="#333" marker-end="url(#punta)"/>
+<rect x="106.0" y="-12.0" width="12" height="15" fill="white" opacity="0.85"/>
+<text x="112.0" y="0.0" text-anchor="middle">b</text>
+<path d="M 224.0 40.0 C 186.0 -6.0 278.0 -6.0 240.0 40.0" fill="none" stroke="#333" marker-end="url(#punta)"/>
+<rect x="226.0" y="-12.0" width="12" height="15" fill="white" opacity="0.85"/>
+<text x="232.0" y="0.0" text-anchor="middle">a</text>
+<path d="M 252.2 70.7 Q 292.0 88.0 331.8 70.7" fill="none" stroke="#333" marker-end="url(#punta)"/>
+<rect x="286.0" y="72.0" width="12" height="15" fill="white" opacity="0.85"/>
+<text x="292.0" y="84.0" text-anchor="middle">b</text>
+<path d="M 331.8 53.3 Q 292.0 36.0 252.2 53.3" fill="none" stroke="#333" marker-end="url(#punta)"/>
+<rect x="286.0" y="20.0" width="12" height="15" fill="white" opacity="0.85"/>
+<text x="292.0" y="32.0" text-anchor="middle">a</text>
+<path d="M 372.2 70.7 Q 412.0 88.0 451.8 70.7" fill="none" stroke="#333" marker-end="url(#punta)"/>
+<rect x="406.0" y="72.0" width="12" height="15" fill="white" opacity="0.85"/>
+<text x="412.0" y="84.0" text-anchor="middle">b</text>
+<path d="M 464.0 40.0 C 426.0 -6.0 518.0 -6.0 480.0 40.0" fill="none" stroke="#333" marker-end="url(#punta)"/>
+<rect x="454.0" y="-12.0" width="36" height="15" fill="white" opacity="0.85"/>
+<text x="472.0" y="0.0" text-anchor="middle">a, b</text>
+<path d="M 56.0 62.0 L 88.0 62.0" fill="none" stroke="#333" marker-end="url(#punta)"/>
+<text x="52.0" y="66.0" text-anchor="end">inicio</text>
+<circle class="estado" cx="112.0" cy="62.0" r="22" fill="#eef4ff" stroke="#333"/>
+<text x="112.0" y="66.0" text-anchor="middle">S0</text>
+<circle class="estado" cx="232.0" cy="62.0" r="22" fill="#eef4ff" stroke="#333"/>
+<text x="232.0" y="66.0" text-anchor="middle">S1</text>
+<circle class="estado" cx="352.0" cy="62.0" r="22" fill="#eef4ff" stroke="#333"/>
+<text x="352.0" y="66.0" text-anchor="middle">S2</text>
+<circle class="aceptacion" cx="472.0" cy="62.0" r="26" fill="none" stroke="#333"/>
+<circle class="estado" cx="472.0" cy="62.0" r="22" fill="#eef4ff" stroke="#333"/>
+<text x="472.0" y="66.0" text-anchor="middle">S3</text>
+</g>
+</svg>

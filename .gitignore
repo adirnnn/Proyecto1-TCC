@@ -14,5 +14,7 @@ __pycache__/
 Thumbs.db
 desktop.ini
 
-# imágenes y archivos que genera el programa al ejecutarse
-salida/
+# imágenes y archivos que genera el programa al ejecutarse.
+# se conserva salida/ejemplo/ como evidencia (grafos de (a|b)*abb(a|b)*).
+salida/*
+!salida/ejemplo/

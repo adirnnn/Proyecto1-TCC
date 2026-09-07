@@ -345,6 +345,15 @@ simulando w = "babbaaaa"
   => w SÍ pertenece a L(r):  SÍ
 ```
 
+### grafos generados
+
+en [`salida/ejemplo/`](salida/ejemplo/) están los grafos de `(a|b)*abb(a|b)*`
+como evidencia (se regeneran con `python main.py expresiones.txt`):
+[`afn.svg`](salida/ejemplo/afn.svg),
+[`afd_subconjuntos.svg`](salida/ejemplo/afd_subconjuntos.svg) y
+[`afd_minimizado.svg`](salida/ejemplo/afd_minimizado.svg) (cada uno con su
+`.dot`). abren en cualquier navegador.
+
 ### tamaños de algunos autómatas
 
 | expresión | postfix | AFN | AFD (subconj.) | AFD mínimo |
