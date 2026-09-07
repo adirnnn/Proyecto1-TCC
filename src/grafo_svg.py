@@ -17,7 +17,9 @@ convenciones que pide el enunciado:
 * los **estados de aceptación** se dibujan con doble círculo;
 * cada **transición** lleva su símbolo (ε incluido); las transiciones paralelas
   entre los mismos dos estados se juntan en una sola arista con las etiquetas
-  separadas por coma; los auto-lazos se dibujan como un arco sobre el estado.
+  separadas por coma; los auto-lazos se dibujan como un arco sobre el estado (y
+  el dibujo se baja lo necesario para que ese arco no se salga del lienzo ni se
+  cruce con el título).
 """
 
 import math
@@ -32,6 +34,10 @@ DY = 84           # separación vertical entre estados de un mismo nivel
 MARGEN = 40
 MARGEN_IZQ = 90   # espacio extra a la izquierda para la flecha de "inicio"
 CURVA = 26        # cuánto se arquean las aristas (para que ida y vuelta no se pisen)
+# cuánto sobresale un auto-lazo por encima del centro de su estado: el arco sube
+# RADIO+46 y su etiqueta va todavía más arriba (con un poco de aire).
+ALTO_LAZO = RADIO + 56
+ALTO_TITULO = 24
 
 
 # ==========================================================================
@@ -166,13 +172,26 @@ def _lazo(x, y):
     return path, (x, y - RADIO - 40)
 
 
+def _desplazamiento_vertical(grafo):
+    """píxeles que hay que bajar el dibujo para que nada se salga ni se pise.
+
+    los auto-lazos de la fila de arriba suben por encima del margen: si hay
+    alguno, se baja el dibujo lo que falte.  el título ocupa además su propia
+    banda, así que tampoco puede cruzarse con un lazo.
+    """
+    desplazamiento = 0
+    if any(origen == destino for (origen, destino) in grafo.aristas):
+        desplazamiento = max(0, ALTO_LAZO - MARGEN)
+    if grafo.titulo:
+        desplazamiento += ALTO_TITULO
+    return desplazamiento
+
+
 def a_svg(grafo):
     """genera el texto SVG del grafo."""
     posiciones, ancho, alto = _posiciones(grafo)
-    y0 = 0
-    if grafo.titulo:
-        y0 = 24
-        alto += y0
+    y0 = _desplazamiento_vertical(grafo)
+    alto += y0
 
     partes = [
         '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 %d %d" '
@@ -271,9 +290,11 @@ def exportar_grafo(grafo, ruta_base):
         os.makedirs(carpeta, exist_ok=True)
     ruta_svg = ruta_base + ".svg"
     ruta_dot = ruta_base + ".dot"
-    with open(ruta_svg, "w", encoding="utf-8") as archivo:
+    # newline="\n": siempre LF, para que los archivos salgan
+    # iguales en windows y en linux (el repositorio se normaliza a LF).
+    with open(ruta_svg, "w", encoding="utf-8", newline="\n") as archivo:
         archivo.write(a_svg(grafo))
-    with open(ruta_dot, "w", encoding="utf-8") as archivo:
+    with open(ruta_dot, "w", encoding="utf-8", newline="\n") as archivo:
         archivo.write(a_dot(grafo))
     return ruta_svg, ruta_dot
 

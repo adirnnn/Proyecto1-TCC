@@ -1,14 +1,15 @@
 """pruebas del incremento 9: generación de grafos SVG (y DOT)."""
 
 import os
+import re
 import tempfile
 import unittest
 import xml.etree.ElementTree as ET
 
 import contexto  # noqa: F401
 
-from grafo_svg import (a_dot, a_svg, exportar_afn, grafo_de_afd, grafo_de_afn,
-                       nombre_seguro)
+from grafo_svg import (ALTO_TITULO, a_dot, a_svg, exportar_afn, grafo_de_afd,
+                       grafo_de_afn, nombre_seguro)
 from minimizacion import afd_minimo_de_expresion
 from subconjuntos import afd_de_expresion
 from thompson import afn_de_expresion
@@ -20,6 +21,29 @@ def svg_afn(expresion, titulo=""):
 
 def svg_afd(expresion, titulo=""):
     return a_svg(grafo_de_afd(afd_de_expresion(expresion), titulo))
+
+
+SVG = "{http://www.w3.org/2000/svg}"
+
+
+def tope_del_dibujo(svg):
+    """la ``y`` más pequeña que se dibuja, ya con el ``translate`` aplicado.
+
+    mira las aristas (``path``) y los recuadros de las etiquetas (``rect``):
+    son los que sobresalen por arriba cuando hay un auto-lazo.
+    """
+    grupo = ET.fromstring(svg).find(SVG + "g")
+    desplazamiento = float(
+        re.match(r"translate\(0,([-\d.]+)\)", grupo.get("transform")).group(1))
+    coordenadas = []
+    for elemento in grupo.iter():
+        if elemento.tag == SVG + "path":
+            numeros = [pieza for pieza in elemento.get("d").split()
+                       if pieza not in ("M", "L", "C", "Q", "z")]
+            coordenadas.extend(float(n) for n in numeros[1::2])   # las y
+        elif elemento.tag == SVG + "rect" and elemento.get("y") is not None:
+            coordenadas.append(float(elemento.get("y")))
+    return desplazamiento + min(coordenadas)
 
 
 class PruebasSVGBienFormado(unittest.TestCase):
@@ -63,6 +87,26 @@ class PruebasCasosDeAutomata(unittest.TestCase):
         svg = svg_afn("(a|b)*abb(a|b)*")   # 22 estados
         raiz = ET.fromstring(svg)
         self.assertTrue(raiz.tag.endswith("svg"))
+
+    def test_un_auto_lazo_no_se_sale_del_lienzo(self):
+        # el AFD mínimo de '(a|b)*' es un solo estado con auto-lazos: el arco
+        # sube por encima del estado y no debe quedar recortado.
+        svg = a_svg(grafo_de_afd(afd_minimo_de_expresion("(a|b)*"), ""))
+        self.assertGreaterEqual(tope_del_dibujo(svg), 0)
+
+    def test_un_auto_lazo_no_se_cruza_con_el_titulo(self):
+        svg = a_svg(grafo_de_afd(afd_minimo_de_expresion("(a|b)*"),
+                                 "AFD minimizado"))
+        self.assertGreater(tope_del_dibujo(svg), ALTO_TITULO)
+
+    def test_el_lienzo_crece_para_dejar_sitio_al_lazo(self):
+        con_lazo = a_svg(grafo_de_afd(afd_minimo_de_expresion("(a|b)*"), ""))
+        sin_lazo = a_svg(grafo_de_afn(afn_de_expresion("a"), ""))
+
+        def alto(svg):
+            return float(ET.fromstring(svg).get("viewBox").split()[3])
+
+        self.assertGreater(alto(con_lazo), alto(sin_lazo))
 
     def test_automata_vacio_de_transiciones(self):
         svg = svg_afn("ε")                 # 2 estados, 1 transición ε
