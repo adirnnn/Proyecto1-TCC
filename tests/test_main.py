@@ -49,10 +49,13 @@ class PruebasEjecucion(unittest.TestCase):
         with open(ruta, "w", encoding="utf-8") as archivo:
             archivo.write("a\n(a|b)*abb\n")
         self.addCleanup(os.remove, ruta)
-        self.assertEqual(main.main([ruta, "-w", "abb"]), 0)
+        # --sin-imagenes: la ejecución completa se prueba en test_integracion;
+        # aquí solo interesa el código de salida.
+        self.assertEqual(main.main([ruta, "-w", "abb", "--sin-imagenes"]), 0)
 
     def test_main_devuelve_dos_si_el_archivo_no_existe(self):
-        self.assertEqual(main.main(["no_existe_98765.txt"]), 2)
+        # -w evita que main pida la cadena por teclado durante la prueba.
+        self.assertEqual(main.main(["no_existe_98765.txt", "-w", "x"]), 2)
 
 
 if __name__ == "__main__":
