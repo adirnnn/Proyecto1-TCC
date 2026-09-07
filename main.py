@@ -32,7 +32,8 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "src"))
 
 from errores import ErrorProyecto  # noqa: E402
-from procesador import leer_lineas, procesar_archivo  # noqa: E402,F401
+from procesador import (leer_lineas, procesar_archivo,  # noqa: E402,F401
+                        simular_en_los_tres)
 from simulador import SI  # noqa: E402
 
 ANCHO = 74
@@ -155,21 +156,26 @@ def main(argv=None):
     preparar_consola_utf8()
     argumentos = construir_argumentos().parse_args(argv)
 
-    cadenas = list(argumentos.cadena)
-    if not cadenas:
-        interactiva = _pedir_cadena_interactiva()
-        if interactiva is not None:
-            cadenas = [interactiva]
-
     try:
         resultados = procesar_archivo(
             argumentos.archivo,
-            cadenas_globales=cadenas,
+            cadenas_globales=list(argumentos.cadena),
             carpeta_salida=None if argumentos.sin_imagenes else argumentos.salida,
             generar_imagenes=not argumentos.sin_imagenes)
     except ErrorProyecto as error:
         print("error: %s" % error, file=sys.stderr)
         return 2
+
+    # si no se pasó -w y alguna expresión válida se quedó sin cadena que
+    # evaluar, se pide una por teclado y se simula en esas expresiones.
+    if not argumentos.cadena:
+        pendientes = [r for r in resultados
+                      if not r.hubo_error and not r.simulaciones]
+        if pendientes:
+            interactiva = _pedir_cadena_interactiva()
+            if interactiva is not None:
+                for resultado in pendientes:
+                    simular_en_los_tres(resultado, interactiva)
 
     for resultado in resultados:
         _imprimir_resultado(resultado, argumentos.detalle, argumentos.tabla)

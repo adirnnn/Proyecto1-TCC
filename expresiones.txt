@@ -1,6 +1,10 @@
 # una expresión regular por línea.
 # las líneas vacías y las que empiezan con # se ignoran.
-# la cadena w se pasa aparte, con la opción -w o cuando el programa la pide.
+#
+# la cadena w se pasa aparte con -w, o se escribe por teclado cuando el
+# programa la pide. de forma opcional, después de un ';' se pueden listar
+# cadenas de prueba separadas por coma (una cadena vacía entre comas, o al
+# final, significa la cadena vacía).
 
 a
 a|b
@@ -9,3 +13,9 @@ a*
 (a|b)*
 (a|b)*abb(a|b)*
 (b|b)*abb(a|b)*
+
+# con cadenas de prueba propias:
+(a|b)*abb(a|b)*;babbaaaa,abb,aabbabb,ba,aaa,
+(b|b)*abb(a|b)*;babbaaaa
+(a*|b*)+;aaabbb,ab,ba,,c
+((ε|a)|b*)*;aab,,c

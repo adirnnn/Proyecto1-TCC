@@ -101,6 +101,9 @@ def validar(tokens):
         anterior = token
 
     if profundidad != 0:
+        if profundidad == 1:
+            raise ErrorParentesis(
+                "paréntesis desbalanceados: falta 1 paréntesis de cierre ')'.")
         raise ErrorParentesis(
             "paréntesis desbalanceados: faltan %d paréntesis de cierre ')'."
             % profundidad)

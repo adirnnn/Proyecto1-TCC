@@ -1,0 +1,23 @@
+# expresiones mal escritas: sirven para comprobar que el programa reporta el
+# error de cada línea y aun así continúa con las demás.
+# (los comentarios van en líneas aparte: el resto de una línea que no empieza
+#  con # se interpreta como parte de la expresión regular.)
+
+# paréntesis sin cerrar
+(a|b
+# paréntesis de sobra
+a|b)
+# grupo vacío
+()
+# cerradura sin operando
+*a
+# unión sin operando derecho
+a|
+# unión sin operando izquierdo
+|a
+# unión incompleta dentro de un grupo
+(a|)
+# barra invertida al final, sin el símbolo que debería escapar
+ab\
+# esta última SÍ es válida: el archivo no se detiene por los errores anteriores
+(a|b)*abb
