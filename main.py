@@ -9,7 +9,8 @@ y simulación de una cadena ``w`` en los tres autómatas para responder **sí** 
 **no** según si ``w`` pertenece al lenguaje de la expresión.
 
 el programa lee un archivo de texto con **una expresión regular por línea** y
-procesa todas. una línea con error se reporta y no detiene a las demás.
+procesa todas. una línea con error se reporta y no detiene a las demás. también
+se puede pasar la expresión directamente con ``-r``, sin archivo.
 
 uso:
 
@@ -17,6 +18,7 @@ uso:
     python main.py expresiones.txt -w abb -w ""        (cadena vacía)
     python main.py expresiones.txt --sin-imagenes --detalle
     python main.py expresiones.txt -s imagenes --tabla
+    python main.py -r "(a|b)*abb(a|b)*" -w babbaaaa    (sin archivo)
 
 si no se pasa ``-w`` y la línea no trae sus propias cadenas (tras ``;``), el
 programa pide la cadena por teclado.
@@ -33,7 +35,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "src
 
 from errores import ErrorProyecto  # noqa: E402
 from procesador import (leer_lineas, procesar_archivo,  # noqa: E402,F401
-                        simular_en_los_tres)
+                        procesar_expresiones, simular_en_los_tres)
 from simulador import SI  # noqa: E402
 
 ANCHO = 74
@@ -64,6 +66,10 @@ def _imprimir_automatas(resultado, con_tabla):
     print(resultado.afn.resumen())
     print(resultado.afd.resumen().replace("AFD:", "AFD (subconjuntos):"))
     print(resultado.afd_minimo.resumen().replace("AFD:", "AFD (minimizado)  :"))
+    if resultado.afd_minimo.estado_pozo is not None:
+        print("          nota: el AFD minimizado se entrega completo; se le")
+        print("          agregó el estado pozo P para las transiciones que")
+        print("          faltaban, así δ queda definida en todos los pares.")
     if con_tabla:
         print("\ntabla del AFD por subconjuntos:")
         print(resultado.afd.tabla())
@@ -133,7 +139,14 @@ def construir_argumentos():
                     "regulares -> afn (thompson) -> afd (subconjuntos) -> afd "
                     "mínimo.")
     analizador.add_argument(
-        "archivo", help="archivo de texto con una expresión regular por línea")
+        "archivo", nargs="?",
+        help="archivo de texto con una expresión regular por línea "
+             "(opcional si se usa -r)")
+    analizador.add_argument(
+        "-r", "--regex", action="append", default=[], metavar="R",
+        help="expresión regular escrita directamente aquí, sin archivo (se "
+             "puede repetir). el texto se toma tal cual: ';' y '#' son "
+             "símbolos normales, no separador ni comentario")
     analizador.add_argument(
         "-w", "--cadena", action="append", default=[], metavar="W",
         help="cadena w a evaluar (se puede repetir: -w abb -w ba)")
@@ -154,14 +167,25 @@ def construir_argumentos():
 
 def main(argv=None):
     preparar_consola_utf8()
-    argumentos = construir_argumentos().parse_args(argv)
+    analizador = construir_argumentos()
+    argumentos = analizador.parse_args(argv)
+    if not argumentos.archivo and not argumentos.regex:
+        analizador.error("hay que indicar el archivo de expresiones o al menos "
+                         "una expresión con -r.")
 
+    comunes = dict(
+        cadenas_globales=list(argumentos.cadena),
+        carpeta_salida=None if argumentos.sin_imagenes else argumentos.salida,
+        generar_imagenes=not argumentos.sin_imagenes)
+
+    # las expresiones de -r van primero; las del archivo siguen la numeración.
+    resultados = []
     try:
-        resultados = procesar_archivo(
-            argumentos.archivo,
-            cadenas_globales=list(argumentos.cadena),
-            carpeta_salida=None if argumentos.sin_imagenes else argumentos.salida,
-            generar_imagenes=not argumentos.sin_imagenes)
+        if argumentos.regex:
+            resultados.extend(procesar_expresiones(argumentos.regex, **comunes))
+        if argumentos.archivo:
+            resultados.extend(procesar_archivo(
+                argumentos.archivo, inicio=len(resultados) + 1, **comunes))
     except ErrorProyecto as error:
         print("error: %s" % error, file=sys.stderr)
         return 2
@@ -187,7 +211,7 @@ def main(argv=None):
 
     print("=" * ANCHO)
     if not resultados:
-        print("el archivo no contiene ninguna expresión regular.")
+        print("no había ninguna expresión regular que procesar.")
         return 0
     print("resumen: %d expresiones procesadas, %d con error."
           % (len(resultados), len(con_error)))
