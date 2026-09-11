@@ -204,15 +204,29 @@ def procesar_expresion(indice, expresion, cadenas=(), carpeta_salida=None,
     return resultado
 
 
+def procesar_expresiones(expresiones, cadenas_globales=(), carpeta_salida=None,
+                         generar_imagenes=True, inicio=1):
+    """procesa expresiones que llegan sueltas (las que se pasan con ``-r``).
+
+    a diferencia de las líneas del archivo, aquí el texto se toma **tal cual**:
+    ni ``;`` separa cadenas de prueba ni ``#`` empieza un comentario, así que
+    los dos pueden usarse como símbolos del alfabeto.
+    """
+    return [procesar_expresion(indice, expresion, list(cadenas_globales),
+                               carpeta_salida, generar_imagenes)
+            for indice, expresion in enumerate(expresiones, start=inicio)]
+
+
 def procesar_archivo(ruta, cadenas_globales=(), carpeta_salida=None,
-                     generar_imagenes=True):
+                     generar_imagenes=True, inicio=1):
     """procesa cada línea del archivo de forma independiente.
 
     un error en una línea **no** detiene el procesamiento de las demás: queda
-    guardado en ``resultado.error``.
+    guardado en ``resultado.error``.  ``inicio`` es el número que lleva la
+    primera expresión (sirve para seguir la cuenta después de las de ``-r``).
     """
     resultados = []
-    for indice, (_, linea) in enumerate(leer_lineas(ruta), start=1):
+    for indice, (_, linea) in enumerate(leer_lineas(ruta), start=inicio):
         expresion, cadenas = separar_expresion_y_cadenas(linea)
         if not cadenas:
             cadenas = list(cadenas_globales)
