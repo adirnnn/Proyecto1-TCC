@@ -30,12 +30,28 @@ imágenes SVG.
 ## requisitos e instalación
 
 - **python 3.10 o superior** (probado en 3.11).
-- no hay dependencias. no hace falta `pip install` nada.
+- no hay dependencias de python. no hace falta `pip install` nada.
+- **opcional**: si el binario `dot` de **Graphviz** está instalado y en el
+  `PATH`, el programa lo usa automáticamente para generar además un `.png`
+  con mejor acomodo (recomendado para autómatas de más de ~10 estados). si no
+  está, el programa sigue funcionando igual con el `.svg` hecho a mano.
 
 ```bash
 git clone <url-del-repositorio>
 cd Proyecto1TCC
 ```
+
+instalar Graphviz (opcional):
+
+```bash
+winget install Graphviz.Graphviz     # windows
+sudo apt install graphviz            # debian/ubuntu
+brew install graphviz                # macos
+```
+
+en windows, después de instalarlo puede hacer falta **abrir una terminal
+nueva** (o agregar manualmente la carpeta `bin` de Graphviz al `PATH`) para
+que el comando `dot` se reconozca.
 
 ## ejecución
 
@@ -127,14 +143,25 @@ cadena `w`, el veredicto en cada autómata más la línea
   `\|` la barra como símbolo, `\\` la barra invertida como símbolo, `\ε` la
   letra griega como símbolo normal. `\0` es el **carácter nulo** (U+0000). si la
   expresión termina con un `\` suelto es un error.
-- **no** se soportan clases de caracteres `[abc]`, comodín `.`, ni anclas. `.`
-  es un símbolo normal.
+- **clase de caracteres `[...]`** *(extensión)*: "cualquiera de estos símbolos",
+  como una unión de un solo carácter (`[abc]` ≡ `(a|b|c)`) pero sin gastar
+  estados de más por cada letra. admite **rangos**: `[a-z]`, `[A-Z]`, `[0-9]`,
+  combinables (`[A-Za-z0-9_]`). un `-` al principio, al final, o escapado
+  (`\-`), es el guion **literal**, no un rango. dentro de la clase también
+  valen los escapes (`\]` el corchete que cierra, `\\` la barra invertida,
+  `\s` el espacio en blanco). una clase sin `]` que la cierre, o vacía `[]`,
+  o con un rango invertido (`[z-a]`), es un error.
+- **`\s`** *(extensión, fuera o dentro de una clase)*: espacio en blanco —
+  equivale a la clase `[ \t]` (espacio y tabulador; no incluye salto de línea,
+  porque una expresión del archivo nunca ocupa más de una línea).
+- **no** se soportan comodín `.` ni anclas (`^`, `$`). `.` es un símbolo normal.
 
 ### errores que se reportan (sin romper el programa)
 
 expresión vacía, paréntesis desbalanceados, grupo vacío `()`, operador sin
 operando (`*a`, `+a`), unión incompleta (`a|`, `|a`, `a||b`, `(a|)`), `\` al
-final. cada mensaje indica la posición del problema.
+final, clase de caracteres sin cerrar (`[abc`), clase vacía (`[]`), rango
+invertido (`[z-a]`). cada mensaje indica la posición del problema.
 
 ---
 
@@ -227,6 +254,10 @@ fragmentos**: un símbolo apila un fragmento nuevo; un operador saca sus
 operandos, los combina y apila el resultado.
 
 - **símbolo `a`**: `(i) --a--> (f)`; **ε**: `(i) --ε--> (f)`
+- **clase `[...]`/`\s`** *(extensión)*: `(i) --c1--> (f)`, `(i) --c2--> (f)`, …
+  una transición por cada carácter de la clase, todas entre el **mismo** par
+  de estados — es la misma idea que la unión, pero sin gastar un estado nuevo
+  por cada letra.
 - **concatenación**: `f1.fin --ε--> f2.inicio`
 - **unión**: nuevos `i`,`f` con cuatro ε (hacia y desde cada rama)
 - **cerradura `*`**: nuevos `i`,`f` con `i→cuerpo`, `i→f`, `cuerpo.fin→cuerpo`,
@@ -284,14 +315,21 @@ un estado más que la versión "de libro" que se dibuja parcial.
 la cadena vacía no entra al bucle: se responde según si el inicial (o su
 cerradura ε) ya acepta.
 
-### 6. grafos SVG (`src/grafo_svg.py`)
+### 6. grafos: SVG y Graphviz (`src/grafo_svg.py`)
 
 los algoritmos no dibujan. el AFN/AFD se pasa a un **modelo neutro** `Grafo` y
-de ahí a **texto SVG** (imagen) y a **texto DOT** (por si se quiere renderizar
-con graphviz; no se ejecuta). el acomodo es por niveles BFS desde el inicial. el
-estado inicial lleva una flecha que viene de la nada; los de aceptación se
-dibujan con doble círculo; cada arista lleva su símbolo (ε incluido) y las
-aristas paralelas se juntan con las etiquetas separadas por coma.
+de ahí a **texto SVG** (a mano, siempre) y a **texto DOT** (siempre). el
+acomodo del SVG es por niveles BFS desde el inicial. el estado inicial lleva
+una flecha que viene de la nada; los de aceptación se dibujan con doble
+círculo; cada arista lleva su símbolo (ε incluido) y las aristas paralelas se
+juntan con las etiquetas separadas por coma.
+
+**además**, si el binario `dot` de Graphviz está en el `PATH`, se le pasa el
+mismo `.dot` por `stdin` (`subprocess.run(["dot", "-Tpng"], input=...)`, sin
+agregar ninguna dependencia de python) y se guarda el `.png` resultante -mejor
+acomodo automático, útil sobre todo para autómatas grandes-. si `dot` no está
+instalado, no responde, o falla, la función simplemente devuelve que no se
+pudo (`None`) y el programa se queda con el SVG: **nunca truena por esto**.
 
 ---
 
@@ -316,6 +354,9 @@ cobertura:
   aceptación, inicial de aceptación).
 - **simulación**: casos del enunciado, cadena vacía, expresiones anulables,
   rechazo tras coincidencia parcial, símbolo fuera del alfabeto, `\0`, espacio.
+- **clases de caracteres**: rangos, combinaciones, guion literal, escapes
+  dentro de la clase, `\s`, errores (`[]`, `[abc`, `[z-a]`), y la expresión
+  real del examen (`[A-Z][A-Za-z0-9_]*\s*::?=...`) con sus 3 cadenas.
 - **integración**: leer el archivo (`\r\n`, sin salto final, duplicados,
   comentarios), una línea con error no detiene el archivo, códigos de salida.
 - **equivalencia**: para un banco de ~20 expresiones y **todas** las cadenas
@@ -379,14 +420,16 @@ como evidencia (se regeneran con `python main.py expresiones.txt`):
 
 ## limitaciones conocidas
 
-- **sin clases de caracteres `[abc]`, comodín `.` ni anclas.** solo unión,
-  concatenación, cerradura, `+`, `?`, agrupación, ε y escapes.
+- **sin comodín `.` ni anclas.** unión, concatenación, cerradura, `+`, `?`,
+  agrupación, ε, escapes, y clases de caracteres `[abc]`/`[a-z]`/`\s`.
 - `;` en el archivo de entrada separa la expresión de las cadenas de prueba, así
   que **`;` no puede usarse como símbolo del alfabeto dentro del archivo** (sí
   con `-w`).
-- el **acomodo del SVG** es sencillo (columnas por nivel BFS): para el AFN de
-  ~22 estados queda apretado y algunas aristas se cruzan. el AFD y el AFD mínimo
-  se leen bien.
+- el **acomodo del SVG hecho a mano** es sencillo (columnas por nivel BFS):
+  para autómatas grandes (20+ estados, típico con clases de caracteres) queda
+  apretado y algunas aristas se cruzan. con **Graphviz instalado** el `.png`
+  no tiene ese problema (recomendado para esos casos); el AFD y el AFD mínimo
+  del SVG a mano se leen bien igual.
 - el AFD minimizado se entrega **completo**; para lenguajes como `abb` eso da un
   estado (el pozo) más que la versión parcial de algunos libros.
 - minimización por moore "ingenuo" `O(n²·|Σ|)` por iteración; suficiente para el

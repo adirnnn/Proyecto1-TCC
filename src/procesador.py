@@ -142,9 +142,21 @@ def construir_automatas(expresion):
 
 
 def _alfabeto_de_postfix(postfix):
-    """símbolos del alfabeto que aparecen en la expresión (sin ε)."""
+    """símbolos del alfabeto que aparecen en la expresión (sin ε).
+
+    una clase de caracteres (``[...]`` o ``\\s``, un ``frozenset``) aporta
+    **cada uno de sus caracteres por separado**, no la clase como un todo.
+    """
     from simbolos import EPSILON
-    return {t.valor for t in postfix if t.tipo == SIMBOLO and t.valor is not EPSILON}
+    alfabeto = set()
+    for token in postfix:
+        if token.tipo != SIMBOLO or token.valor is EPSILON:
+            continue
+        if isinstance(token.valor, frozenset):
+            alfabeto.update(token.valor)
+        else:
+            alfabeto.add(token.valor)
+    return alfabeto
 
 
 def simular_en_los_tres(resultado, cadena):

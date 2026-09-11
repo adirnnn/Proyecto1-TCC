@@ -73,9 +73,20 @@ class _Constructor:
 
     # -- fragmentos básicos ------------------------------------------------
     def simbolo(self, valor):
-        """(i) --valor--> (f).  ``valor`` puede ser un carácter o ``EPSILON``."""
+        """(i) --valor--> (f).
+
+        ``valor`` puede ser un carácter, ``EPSILON``, o un ``frozenset`` de
+        caracteres (una clase ``[...]``/``\\s``: "cualquiera de estos"). en
+        ese último caso se agrega **una transición por carácter**, todas entre
+        el mismo par de estados -es la misma idea que una unión, pero sin
+        gastar estados nuevos por cada símbolo-.
+        """
         i, f = self._nuevo_estado(), self._nuevo_estado()
-        i.agregar_transicion(valor, f)
+        if isinstance(valor, frozenset):
+            for caracter in valor:
+                i.agregar_transicion(caracter, f)
+        else:
+            i.agregar_transicion(valor, f)
         return _Fragmento(i, f)
 
     def concatenar(self, f1, f2):

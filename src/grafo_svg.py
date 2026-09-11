@@ -2,16 +2,24 @@
 
 los algoritmos no saben dibujar. el flujo es:
 
-    AFN / AFD  ->  Grafo (modelo neutro)  ->  texto SVG   (imagen)
-                                          ->  texto DOT   (por si se quiere
-                                                           renderizar con graphviz)
+    AFN / AFD  ->  Grafo (modelo neutro)  ->  texto SVG   (imagen, siempre)
+                                          ->  texto DOT   (siempre)
+                                          ->  imagen PNG  (con Graphviz, si está)
 
 el SVG se genera **a mano** con la biblioteca estándar: no hace falta instalar
-nada. el acomodo es por niveles BFS desde el inicial (una columna por nivel) y
-reparto vertical dentro de la columna. es un acomodo sencillo -para autómatas
-grandes queda apretado- pero es determinista y siempre produce una imagen.
+nada, y **siempre** se produce, aunque Graphviz no esté disponible. el acomodo
+es por niveles BFS desde el inicial (una columna por nivel) y reparto vertical
+dentro de la columna: es sencillo -para autómatas grandes (20+ estados) queda
+apretado y algunas aristas se cruzan- pero es determinista y nunca falla.
 
-convenciones que pide el enunciado:
+si el binario `dot` de Graphviz está instalado y en el PATH, **además** se
+genera un `.png` a partir del mismo `.dot` -con mejor acomodo automático,
+sobre todo para autómatas grandes-. no es obligatorio: si `dot` no está, el
+programa simplemente no genera el PNG y se queda con el SVG. no se agrega
+ninguna dependencia de Python nueva: se invoca `dot` como proceso externo
+(``subprocess``), no se importa el paquete ``graphviz`` de PyPI.
+
+convenciones que pide el enunciado (las cumplen los tres formatos):
 
 * el **estado inicial** se marca con una flecha que viene de la nada;
 * los **estados de aceptación** se dibujan con doble círculo;
@@ -22,6 +30,7 @@ convenciones que pide el enunciado:
 
 import math
 import os
+import subprocess
 
 from simbolos import EPSILON
 from tokenizador import mostrar_valor
@@ -262,28 +271,64 @@ def a_dot(grafo):
 
 
 # ==========================================================================
+# Graphviz (opcional): renderiza el mismo .dot con el binario `dot`
+# ==========================================================================
+def _renderizar_con_graphviz(texto_dot, ruta_png, formato="png"):
+    """intenta invocar el binario `dot` de Graphviz sobre ``texto_dot``.
+
+    devuelve ``True`` y escribe ``ruta_png`` si lo logra; ``False`` si el
+    binario no está instalado, no responde, o falla -en cualquier caso no se
+    lanza una excepción, porque el SVG a mano ya cubre la generación de la
+    imagen-.
+    """
+    try:
+        resultado = subprocess.run(
+            ["dot", "-T%s" % formato],
+            input=texto_dot.encode("utf-8"),
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            timeout=10)
+    except (OSError, subprocess.TimeoutExpired):
+        return False  # no está instalado el binario `dot`, o no respondió
+    if resultado.returncode != 0 or not resultado.stdout:
+        return False
+    with open(ruta_png, "wb") as archivo:
+        archivo.write(resultado.stdout)
+    return True
+
+
+# ==========================================================================
 # API de archivos
 # ==========================================================================
-def exportar_grafo(grafo, ruta_base):
-    """escribe ``ruta_base.svg`` y ``ruta_base.dot``.  devuelve (svg, dot)."""
+def exportar_grafo(grafo, ruta_base, con_graphviz=True):
+    """escribe ``ruta_base.svg`` y ``ruta_base.dot`` (siempre), y
+    ``ruta_base.png`` con Graphviz si ``dot`` está disponible.
+
+    devuelve ``(ruta_svg, ruta_dot, ruta_png)``; ``ruta_png`` es ``None`` si
+    Graphviz no estaba instalado o falló al renderizar.
+    """
     carpeta = os.path.dirname(ruta_base)
     if carpeta:
         os.makedirs(carpeta, exist_ok=True)
     ruta_svg = ruta_base + ".svg"
     ruta_dot = ruta_base + ".dot"
+    texto_dot = a_dot(grafo)
     with open(ruta_svg, "w", encoding="utf-8") as archivo:
         archivo.write(a_svg(grafo))
     with open(ruta_dot, "w", encoding="utf-8") as archivo:
-        archivo.write(a_dot(grafo))
-    return ruta_svg, ruta_dot
+        archivo.write(texto_dot)
+
+    ruta_png = ruta_base + ".png"
+    if not (con_graphviz and _renderizar_con_graphviz(texto_dot, ruta_png)):
+        ruta_png = None
+    return ruta_svg, ruta_dot, ruta_png
 
 
-def exportar_afn(afn, ruta_base, titulo="AFN (Thompson)"):
-    return exportar_grafo(grafo_de_afn(afn, titulo), ruta_base)
+def exportar_afn(afn, ruta_base, titulo="AFN (Thompson)", con_graphviz=True):
+    return exportar_grafo(grafo_de_afn(afn, titulo), ruta_base, con_graphviz)
 
 
-def exportar_afd(afd, ruta_base, titulo="AFD"):
-    return exportar_grafo(grafo_de_afd(afd, titulo), ruta_base)
+def exportar_afd(afd, ruta_base, titulo="AFD", con_graphviz=True):
+    return exportar_grafo(grafo_de_afd(afd, titulo), ruta_base, con_graphviz)
 
 
 def nombre_seguro(texto, maximo=40):

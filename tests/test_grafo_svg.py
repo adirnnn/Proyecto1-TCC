@@ -1,13 +1,16 @@
 """pruebas del incremento 9: generación de grafos SVG (y DOT)."""
 
 import os
+import subprocess
 import tempfile
 import unittest
 import xml.etree.ElementTree as ET
+from unittest.mock import patch
 
 import contexto  # noqa: F401
 
-from grafo_svg import (a_dot, a_svg, exportar_afn, grafo_de_afd, grafo_de_afn,
+from grafo_svg import (a_dot, a_svg, exportar_afd, exportar_afn,
+                       exportar_grafo, grafo_de_afd, grafo_de_afn,
                        nombre_seguro)
 from minimizacion import afd_minimo_de_expresion
 from subconjuntos import afd_de_expresion
@@ -82,11 +85,58 @@ class PruebasArchivos(unittest.TestCase):
     def test_exportar_afn_escribe_svg_y_dot(self):
         with tempfile.TemporaryDirectory() as carpeta:
             base = os.path.join(carpeta, "afn")
-            ruta_svg, ruta_dot = exportar_afn(afn_de_expresion("(a|b)*abb"), base)
+            # sin mockear `dot`: en esta máquina de pruebas puede estar
+            # instalado o no; de cualquier forma el svg y el dot son
+            # obligatorios y el png es opcional (None si no hay graphviz).
+            ruta_svg, ruta_dot, ruta_png = exportar_afn(
+                afn_de_expresion("(a|b)*abb"), base)
             self.assertTrue(os.path.exists(ruta_svg))
             self.assertTrue(os.path.exists(ruta_dot))
+            if ruta_png is not None:
+                self.assertTrue(os.path.exists(ruta_png))
             with open(ruta_svg, encoding="utf-8") as archivo:
                 ET.fromstring(archivo.read())
+
+    def test_sin_graphviz_instalado_no_hay_png_pero_si_svg_y_dot(self):
+        with tempfile.TemporaryDirectory() as carpeta, \
+             patch("subprocess.run", side_effect=FileNotFoundError):
+            base = os.path.join(carpeta, "afd")
+            ruta_svg, ruta_dot, ruta_png = exportar_afd(
+                afd_de_expresion("a|b"), base)
+            self.assertTrue(os.path.exists(ruta_svg))
+            self.assertTrue(os.path.exists(ruta_dot))
+            self.assertIsNone(ruta_png)
+
+    def test_con_graphviz_simulado_si_hay_png(self):
+        salida_falsa = subprocess.CompletedProcess(
+            args=["dot"], returncode=0, stdout=b"contenido-png-simulado")
+        with tempfile.TemporaryDirectory() as carpeta, \
+             patch("subprocess.run", return_value=salida_falsa):
+            base = os.path.join(carpeta, "afn")
+            ruta_svg, ruta_dot, ruta_png = exportar_afn(
+                afn_de_expresion("a"), base)
+            self.assertIsNotNone(ruta_png)
+            self.assertTrue(os.path.exists(ruta_png))
+            with open(ruta_png, "rb") as archivo:
+                self.assertEqual(archivo.read(), b"contenido-png-simulado")
+
+    def test_con_graphviz_da_error_no_hay_png_pero_si_svg_y_dot(self):
+        salida_falsa = subprocess.CompletedProcess(
+            args=["dot"], returncode=1, stdout=b"")
+        with tempfile.TemporaryDirectory() as carpeta, \
+             patch("subprocess.run", return_value=salida_falsa):
+            base = os.path.join(carpeta, "afd_min")
+            ruta_svg, ruta_dot, ruta_png = exportar_grafo(
+                grafo_de_afn(afn_de_expresion("a"), ""), base)
+            self.assertTrue(os.path.exists(ruta_svg))
+            self.assertIsNone(ruta_png)
+
+    def test_con_graphviz_false_no_lo_intenta(self):
+        with tempfile.TemporaryDirectory() as carpeta, \
+             patch("subprocess.run") as llamada:
+            base = os.path.join(carpeta, "afn")
+            exportar_afn(afn_de_expresion("a"), base, con_graphviz=False)
+            llamada.assert_not_called()
 
 
 class PruebasNombreSeguro(unittest.TestCase):

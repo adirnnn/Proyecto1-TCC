@@ -78,10 +78,20 @@ def _imprimir_imagenes(resultado):
     etiquetas = {"afn": "AFN             ",
                  "afd": "AFD subconjuntos",
                  "afd_minimo": "AFD minimizado  "}
+    hubo_graphviz = False
     for clave in ("afn", "afd", "afd_minimo"):
-        ruta_svg, ruta_dot = resultado.imagenes[clave]
-        print("  %s -> %s  (+ %s)" % (etiquetas[clave], ruta_svg,
-                                      os.path.basename(ruta_dot)))
+        ruta_svg, ruta_dot, ruta_png = resultado.imagenes[clave]
+        if ruta_png:
+            hubo_graphviz = True
+            print("  %s -> %s  (graphviz; también %s, %s)"
+                 % (etiquetas[clave], ruta_png, os.path.basename(ruta_svg),
+                    os.path.basename(ruta_dot)))
+        else:
+            print("  %s -> %s  (dibujado a mano; + %s)"
+                 % (etiquetas[clave], ruta_svg, os.path.basename(ruta_dot)))
+    if not hubo_graphviz:
+        print("  (instalá Graphviz y agregá 'dot' al PATH para imágenes más "
+             "prolijas: winget install Graphviz.Graphviz)")
 
 
 def _imprimir_simulaciones(resultado, con_detalle):

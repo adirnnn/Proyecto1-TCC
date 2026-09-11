@@ -6,16 +6,7 @@
 # cadenas de prueba separadas por coma (una cadena vacía entre comas, o al
 # final, significa la cadena vacía).
 
-a
-a|b
-ab
-a*
-(a|b)*
-(a|b)*abb(a|b)*
-(b|b)*abb(a|b)*
-
-# con cadenas de prueba propias:
-(a|b)*abb(a|b)*;babbaaaa,abb,aabbabb,ba,aaa,
-(b|b)*abb(a|b)*;babbaaaa
-(a*|b*)+;aaabbb,ab,ba,,c
-((ε|a)|b*)*;aab,,c
+# expresión del examen (reglas de gramática tipo BNF: "NOMBRE ::= producción").
+# ojo: el '*' se perdió al copiar/pegar desde el chat (markdown lo interpreta
+# como negrita); esta es la versión con los '*' restituidos.
+[A-Z][A-Za-z0-9_]*\s*::?=\s*([A-Za-z0-9_|'"\s\[\](){}*+?\\-]|\|)+;S ::= A B | C,EXPR ::= term '+' term | term,123VAR = value

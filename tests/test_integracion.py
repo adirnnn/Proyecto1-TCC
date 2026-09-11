@@ -68,9 +68,31 @@ class PruebasProcesarArchivo(unittest.TestCase):
                                           generar_imagenes=True)
             imagenes = resultados[0].imagenes
             self.assertEqual(set(imagenes), {"afn", "afd", "afd_minimo"})
-            for ruta_svg, ruta_dot in imagenes.values():
+            for ruta_svg, ruta_dot, ruta_png in imagenes.values():
                 self.assertTrue(os.path.exists(ruta_svg))
                 self.assertTrue(os.path.exists(ruta_dot))
+                # ruta_png depende de si esta máquina tiene Graphviz instalado
+                if ruta_png is not None:
+                    self.assertTrue(os.path.exists(ruta_png))
+
+
+class PruebasAlfabetoConClases(unittest.TestCase):
+    def test_una_clase_aporta_sus_caracteres_por_separado(self):
+        # antes, el alfabeto reportado incluía la CLASE entera (un frozenset)
+        # en vez de sus caracteres; esto imprimía mal (o crasheaba) en main.py.
+        resultado = procesar_expresion(1, "[abc]d", generar_imagenes=False)
+        self.assertFalse(resultado.hubo_error)
+        self.assertEqual(resultado.alfabeto, {"a", "b", "c", "d"})
+        self.assertTrue(all(isinstance(s, str) for s in resultado.alfabeto))
+
+    def test_main_no_crashea_con_una_clase_en_la_expresion(self):
+        ruta = archivo_temporal(r"[A-Z][a-z]*" + "\n")
+        self.addCleanup(os.remove, ruta)
+        salida = io.StringIO()
+        with redirect_stdout(salida):
+            codigo = main.main([ruta, "-w", "Hola", "--sin-imagenes"])
+        self.assertEqual(codigo, 0)
+        self.assertIn("alfabeto: {", salida.getvalue())
 
 
 class PruebasEjemploDelEnunciado(unittest.TestCase):
